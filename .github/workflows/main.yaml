@@ -1,7 +1,7 @@
 name: Manual Migration Trigger
 
 on:
-  workflow_dispatch:  # Allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   run-migration:
@@ -11,14 +11,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '7.0.x'  # Make sure this matches your CLI tool's target
-
-      - name: Download Migration Tool CLI
+      - name: Download Azure DevOps Migration Tools
         run: |
-          dotnet tool install --global VstsSyncMigrator.Console
+          Invoke-WebRequest -Uri "https://github.com/nkdAgility/azure-devops-migration-tools/releases/download/v16.16.20/MigrationTools.ConsoleApp.16.16.20.zip" -OutFile "migration.zip"
+          Expand-Archive -Path "migration.zip" -DestinationPath "migration-tools"
         shell: pwsh
 
       - name: Replace secrets in configuration file
@@ -31,5 +27,6 @@ jobs:
 
       - name: Run Migration Tool
         run: |
-          devopsmigration execute -c configuration.json
+          cd migration-tools
+          ./MigrationTools.Console.exe execute -c ../configuration.json
         shell: pwsh
