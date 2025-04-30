@@ -1,0 +1,35 @@
+name: Manual Migration Trigger
+
+on:
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+jobs:
+  run-migration:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '7.0.x'  # Make sure this matches your CLI tool's target
+
+      - name: Download Migration Tool CLI
+        run: |
+          dotnet tool install --global VstsSyncMigrator.Console
+        shell: pwsh
+
+      - name: Replace secrets in configuration file
+        run: |
+          $template = Get-Content configuration.template.json -Raw
+          $template = $template -replace '__SOURCE_PAT__', "${{ secrets.SOURCE_PAT }}"
+          $template = $template -replace '__TARGET_PAT__', "${{ secrets.DESTINATION_PAT }}"
+          Set-Content -Path configuration.json -Value $template
+        shell: pwsh
+
+      - name: Run Migration Tool
+        run: |
+          devopsmigration execute -c configuration.json
+        shell: pwsh
